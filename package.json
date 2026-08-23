@@ -1,6 +1,6 @@
 {
   "name": "x-clipper",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Save X (Twitter) posts with images and videos included.",
   "main": "main.js",
   "scripts": {

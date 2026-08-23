@@ -7,6 +7,7 @@ import {
 import { XClipperSettingTab } from "./settings-tab";
 import { ClipPostModal } from "./modal";
 import { getArticleMedia, selectPostText, type XArticle } from "./article";
+import { getProtocolClipUrl } from "./protocol";
 
 interface PostNoteData {
 	url: string;
@@ -50,6 +51,15 @@ export default class XClipperPlugin extends Plugin {
 			callback: () => {
 				this.openClipPostModal();
 			},
+		});
+
+		this.registerObsidianProtocolHandler("x-clipper", (params) => {
+			const url = getProtocolClipUrl(params);
+			if (!url) {
+				new Notice("X Clipper: no valid X post URL was provided");
+				return;
+			}
+			this.openClipPostModal(url);
 		});
 
 		this.addSettingTab(new XClipperSettingTab(this.app, this));
@@ -144,7 +154,7 @@ export default class XClipperPlugin extends Plugin {
 	}
 
 	// ── モーダルを開いてポストを保存する ──
-	openClipPostModal(): void {
+	openClipPostModal(directUrl?: string): void {
 		const suggestedTags = this.getTopRecentTags(20);
 
 		const history = this.settings.recentTagHistory || [];
@@ -157,9 +167,7 @@ export default class XClipperPlugin extends Plugin {
 			lastUsedTags = manualTags.map((t) => t.replace(/^#/, ""));
 		}
 
-		new ClipPostModal(
-			this.app,
-			async (url: string, shouldOpen: boolean, tags: string) => {
+		const onSubmit = async (url: string, shouldOpen: boolean, tags: string): Promise<void> => {
 				if (!url.trim()) {
 					new Notice("Please enter a valid post URL");
 					return;
@@ -283,7 +291,16 @@ export default class XClipperPlugin extends Plugin {
 					const errMsg = (err as Error).message || "Unknown error";
 					new Notice(`Error: ${errMsg}. Please check the URL.`);
 				}
-			},
+		};
+
+		if (directUrl) {
+			void onSubmit(directUrl, this.settings.openAfterSave, "");
+			return;
+		}
+
+		new ClipPostModal(
+			this.app,
+			onSubmit,
 			this.settings.openAfterSave,
 			suggestedTags,
 			lastUsedTags

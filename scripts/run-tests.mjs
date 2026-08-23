@@ -1,26 +1,33 @@
 import { build } from "esbuild";
 import { spawnSync } from "node:child_process";
-import { rmSync } from "node:fs";
+import { mkdtempSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const outfile = join(tmpdir(), `x-clipper-article-test-${process.pid}.mjs`);
+const outdir = mkdtempSync(join(tmpdir(), "x-clipper-tests-"));
+const entryPoints = readdirSync("src")
+	.filter((name) => name.endsWith(".test.ts"))
+	.map((name) => join("src", name));
 
 try {
 	await build({
-		entryPoints: ["src/article.test.ts"],
+		entryPoints,
 		bundle: true,
 		platform: "node",
 		format: "esm",
 		target: "node18",
-		outfile,
+		outdir,
+		outExtension: { ".js": ".mjs" },
 		logLevel: "silent",
 	});
 
-	const result = spawnSync(process.execPath, ["--test", outfile], {
+	const tests = readdirSync(outdir)
+		.filter((name) => name.endsWith(".test.mjs"))
+		.map((name) => join(outdir, name));
+	const result = spawnSync(process.execPath, ["--test", ...tests], {
 		stdio: "inherit",
 	});
 	process.exitCode = result.status ?? 1;
 } finally {
-	rmSync(outfile, { force: true });
+	rmSync(outdir, { recursive: true, force: true });
 }

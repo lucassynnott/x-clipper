@@ -18,6 +18,7 @@ English README → [README.md](README.md)
 - **Custom X icon** in the ribbon for quick access
 - **Japanese language support** for filenames and tags
 - **Fallback API** — automatically tries vxtwitter if fxtwitter is unavailable
+- **Android share automation** — clip directly with `obsidian://x-clipper?url=<encoded-x-url>`
 
 ## Installation
 
