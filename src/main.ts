@@ -6,7 +6,7 @@ import {
 } from "./constants";
 import { XClipperSettingTab } from "./settings-tab";
 import { ClipPostModal } from "./modal";
-import { getArticleMediaUrls, selectPostText, type XArticle } from "./article";
+import { getArticleMedia, selectPostText, type XArticle } from "./article";
 
 interface PostNoteData {
 	url: string;
@@ -195,9 +195,6 @@ export default class XClipperPlugin extends Plugin {
 							if (photo.url) imageUrls.push(photo.url);
 						}
 					}
-					if (tweet.article) {
-						imageUrls.push(...getArticleMediaUrls(tweet.article));
-					}
 
 					// 動画URLを収集
 					const videoUrls: string[] = [];
@@ -205,6 +202,11 @@ export default class XClipperPlugin extends Plugin {
 						for (const video of tweet.media.videos) {
 							if (video.url) videoUrls.push(video.url);
 						}
+					}
+					if (tweet.article) {
+						const articleMedia = getArticleMedia(tweet.article);
+						imageUrls.push(...articleMedia.images);
+						videoUrls.push(...articleMedia.videos);
 					}
 
 					// メディアをダウンロード

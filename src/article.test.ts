@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { articleToMarkdown, getArticleMediaUrls, selectPostText, type XArticle } from "./article.ts";
+import { articleToMarkdown, getArticleMedia, getArticleMediaUrls, selectPostText, type XArticle } from "./article.ts";
 
 const article = {
 	title: "A useful article",
@@ -84,6 +84,25 @@ test("collects and deduplicates article image URLs", () => {
 	]);
 });
 
+test("separates Article videos and selects the highest-bitrate MP4 variant", () => {
+	const withVideo: XArticle = {
+		media_entities: [{
+			media_info: {
+				__typename: "ApiVideo",
+				variants: [
+					{ content_type: "application/x-mpegURL", url: "https://example.com/video.m3u8" },
+					{ content_type: "video/mp4", bitrate: 256000, url: "https://example.com/low.mp4" },
+					{ content_type: "video/mp4", bitrate: 2176000, url: "https://example.com/high.mp4" },
+				],
+			},
+		}],
+	};
+	assert.deepEqual(getArticleMedia(withVideo), {
+		images: [],
+		videos: ["https://example.com/high.mp4"],
+	});
+});
+
 test("keeps ordinary post text unchanged when there is no Article", () => {
 	assert.equal(selectPostText(undefined, "An ordinary post"), "An ordinary post");
 });
@@ -116,17 +135,19 @@ test("renders text-bearing atomic entities instead of dropping them", () => {
 				{ type: "atomic", text: " ", entityRanges: [{ offset: 0, length: 1, key: 0 }] },
 				{ type: "atomic", text: " ", entityRanges: [{ offset: 0, length: 1, key: 1 }] },
 				{ type: "atomic", text: " ", entityRanges: [{ offset: 0, length: 1, key: 2 }] },
+				{ type: "atomic", text: "E = mc^2", entityRanges: [{ offset: 0, length: 8, key: 3 }] },
 			],
 			entityMap: [
 				{ key: "0", value: { type: "MARKDOWN", data: { markdown: "```js\nconsole.log('saved');\n```" } } },
 				{ key: "1", value: { type: "TWEET", data: { tweetId: "123456789" } } },
 				{ key: "2", value: { type: "DIVIDER", data: {} } },
+				{ key: "3", value: { type: "LATEX", data: {} } },
 			],
 		},
 	};
 	assert.equal(
 		articleToMarkdown(atomicArticle),
-		"# Atomic content\n\n```js\nconsole.log('saved');\n```\n\nhttps://x.com/i/status/123456789\n\n---"
+		"# Atomic content\n\n```js\nconsole.log('saved');\n```\n\nhttps://x.com/i/status/123456789\n\n---\n\n$$\nE = mc^2\n$$"
 	);
 });
 

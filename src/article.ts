@@ -128,8 +128,9 @@ function renderAtomicBlock(block: ArticleBlock, entities: Map<string, ArticleEnt
 			rendered.push(`https://x.com/i/status/${data.tweetId}`);
 		} else if (type === "DIVIDER") {
 			rendered.push("---");
-		} else if (type === "LATEX" && typeof data?.latex === "string") {
-			rendered.push(`$$\n${data.latex}\n$$`);
+		} else if (type === "LATEX") {
+			const latex = typeof data?.latex === "string" ? data.latex : block.text?.trim();
+			if (latex) rendered.push(`$$\n${latex}\n$$`);
 		}
 	}
 	return rendered.join("\n\n");
@@ -170,18 +171,58 @@ export function selectPostText(article: XArticle | undefined, postText: string |
 	return articleMarkdown || postText || "";
 }
 
-function mediaUrl(value: unknown): string | null {
-	if (!value || typeof value !== "object") return null;
+export interface ArticleMedia {
+	images: string[];
+	videos: string[];
+}
+
+function classifyMedia(value: unknown): ArticleMedia {
+	const result: ArticleMedia = { images: [], videos: [] };
+	if (!value || typeof value !== "object") return result;
 	const media = value as Record<string, unknown>;
 	const info = (media.media_info || media) as Record<string, unknown>;
-	for (const key of ["original_img_url", "media_url_https", "media_url", "url"]) {
-		if (typeof info[key] === "string") return info[key] as string;
+	const type = typeof info.__typename === "string" ? info.__typename : "";
+
+	if (type === "ApiVideo" || type === "ApiGif") {
+		const videoInfo = info.video_info && typeof info.video_info === "object"
+			? info.video_info as Record<string, unknown>
+			: undefined;
+		const videoInfoVariants = videoInfo?.variants;
+		const rawVariants = Array.isArray(info.variants)
+			? info.variants
+			: (Array.isArray(videoInfoVariants) ? videoInfoVariants : []);
+		const variants = rawVariants
+			.filter((variant): variant is Record<string, unknown> => Boolean(variant) && typeof variant === "object")
+			.filter((variant) => variant.content_type === "video/mp4" ||
+				(typeof variant.url === "string" && variant.url.includes(".mp4")))
+			.sort((a, b) => Number(b.bitrate || 0) - Number(a.bitrate || 0));
+		const selectedUrl = variants[0]?.url;
+		if (typeof selectedUrl === "string") result.videos.push(selectedUrl);
+		return result;
 	}
-	return null;
+
+	for (const key of ["original_img_url", "media_url_https", "media_url", "url"]) {
+		if (typeof info[key] === "string") {
+			result.images.push(info[key] as string);
+			break;
+		}
+	}
+	return result;
+}
+
+export function getArticleMedia(article: XArticle): ArticleMedia {
+	const result: ArticleMedia = { images: [], videos: [] };
+	for (const item of [article.cover_media, ...(article.media_entities || [])]) {
+		const classified = classifyMedia(item);
+		result.images.push(...classified.images);
+		result.videos.push(...classified.videos);
+	}
+	return {
+		images: [...new Set(result.images)],
+		videos: [...new Set(result.videos)],
+	};
 }
 
 export function getArticleMediaUrls(article: XArticle): string[] {
-	const urls = [mediaUrl(article.cover_media), ...(article.media_entities || []).map(mediaUrl)]
-		.filter((url): url is string => Boolean(url));
-	return [...new Set(urls)];
+	return getArticleMedia(article).images;
 }
