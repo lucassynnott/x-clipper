@@ -6,6 +6,7 @@ import {
 } from "./constants";
 import { XClipperSettingTab } from "./settings-tab";
 import { ClipPostModal } from "./modal";
+import { getArticleMediaUrls, selectPostText, type XArticle } from "./article";
 
 interface PostNoteData {
 	url: string;
@@ -27,6 +28,7 @@ interface FxTwitterApiResponse {
 			photos?: Array<{ url?: string }>;
 			videos?: Array<{ url?: string }>;
 		};
+		article?: XArticle;
 	};
 }
 
@@ -184,7 +186,7 @@ export default class XClipperPlugin extends Plugin {
 					const authorScreenName: string = tweet.author?.screen_name || parsed.screenName;
 					const postUrl = `https://x.com/${authorScreenName}/status/${parsed.statusId}`;
 					const authorUrl = `https://x.com/${authorScreenName}`;
-					const postText: string = tweet.text || "";
+					const postText: string = selectPostText(tweet.article, tweet.text);
 
 					// 画像URLを収集
 					const imageUrls: string[] = [];
@@ -192,6 +194,9 @@ export default class XClipperPlugin extends Plugin {
 						for (const photo of tweet.media.photos) {
 							if (photo.url) imageUrls.push(photo.url);
 						}
+					}
+					if (tweet.article) {
+						imageUrls.push(...getArticleMediaUrls(tweet.article));
 					}
 
 					// 動画URLを収集

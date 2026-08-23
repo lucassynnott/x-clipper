@@ -8,7 +8,8 @@ English README → [README.md](README.md)
 
 ## Features
 
-- **Clip posts** from X (Twitter) by pasting the URL
+- **Clip posts and Articles** from X (Twitter) by pasting the URL
+- **Save complete Article text** as Markdown, including headings, lists, quotes, links, and inline formatting
 - **Download images and videos** directly into your vault's attachments folder
 - **Auto-extract hashtags** from post text and save them as tags (both frontmatter and inline)
 - **Tag suggestions** with toggle buttons based on your usage history

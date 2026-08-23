@@ -1,7 +1,7 @@
 {
 	"id": "x-clipper",
 	"name": "X Clipper",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"minAppVersion": "1.5.12",
 	"description": "Save X (Twitter) posts as notes with images and videos included.",
 	"author": "UNPySide",

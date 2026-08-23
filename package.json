@@ -1,11 +1,12 @@
 {
   "name": "x-clipper",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Save X (Twitter) posts with images and videos included.",
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production && node release.mjs",
+    "test": "node scripts/run-tests.mjs",
     "lint": "eslint . --ext .ts,.tsx --fix"
   },
   "keywords": [],
